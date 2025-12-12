@@ -112,7 +112,7 @@
     async function loadDangerPoints() {
       try {
         // 例: あなたのAPIエンドポイント
-        const response = await fetch('http://localhost:1880/getincident');
+        const response = await fetch('https://mynoderedapp.azurewebsites.net/getincident');
         const data = await response.json();
         
         // data形式例: [{ lat: 35.69, lng: 139.76 }, { lat: 35.68, lng: 139.77 }]
