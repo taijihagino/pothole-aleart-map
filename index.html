@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>HERE Map Sample</title>
+  <title>Pothole alert map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
@@ -47,7 +47,7 @@
 <body>
   <div id="map"></div>
   <div class="overlay">
-    HERE Map サンプルアプリ<br />
+    Pothole 通知 Map<br />
     <small>Advent Calendar向けに使うよ！</small>
   </div>
   <div class="controls">
@@ -77,7 +77,7 @@
 
     const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 
-    // SVGマーカーアイコン
+    // SVGマーカーアイコン（Pothole対象箇所に「危」の表示）
     const svgMarkup =
         '<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">' +
         '<rect stroke="white" fill="#1b468d" x="1" y="1" width="22" height="22" />' +
@@ -85,7 +85,7 @@
         'text-anchor="middle" fill="white">危</text></svg>';
     const icon = new H.map.Icon(svgMarkup);
 
-    // マーカーグループ（削除・追加を容易にするため）
+    // マーカーグループ
     let markerGroup = new H.map.Group();
     map.addObject(markerGroup);
 
@@ -102,7 +102,7 @@
         markerGroup.addObject(marker);
       });
 
-      // 最初のポイントに中心を移動（オプション）
+      // 最初のポイントに中心を移動
       if (points.length > 0) {
         map.setCenter({ lat: points[0].lat, lng: points[0].lng });
       }
@@ -120,17 +120,7 @@
         
         console.log(`${data.length}件の危険箇所を読み込みました`);
       } catch (error) {
-        console.error('データ取得エラー:', error);
-        
-        // フォールバック: モックデータで表示
-        /*
-        const mockData = [
-          { lat: 35.69, lng: 139.76 },
-          { lat: 35.685, lng: 139.755 },
-          { lat: 35.678, lng: 139.77 }
-        ];
-        addMarkers(mockData);
-        */
+        console.error('データ取得エラー:', error);        
       }
     }
 
