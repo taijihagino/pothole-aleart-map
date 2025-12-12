@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>HERE Map Sample</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+    #map { width: 100%; height: 100%; }
+    .overlay {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      font-family: sans-serif;
+      line-height: 1.4;
+    }
+    .controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 8px 16px;
+      background: #1b468d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #2a5aa0; }
+  </style>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+  <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+</head>
+<body>
+  <div id="map"></div>
+  <div class="overlay">
+    HERE Map サンプルアプリ<br />
+    <small>Advent Calendar向けに使うよ！</small>
+  </div>
+  <div class="controls">
+    <button onclick="loadDangerPoints()">危険箇所を更新</button>
+  </div>
+  <script>
+    const platform = new H.service.Platform({
+        apikey: 'tY1_fhwT2i3ayuTCf7PCWls7PLfvpATO72TvW4seu3s',
+    });
+
+    let omvService = platform.getOMVService({
+        path: 'v2/vectortiles/core/mc',
+    });
+    const baseUrl = 'https://js.api.here.com/v3/3.1/styles/omv/oslo/japan/';
+    let style = new H.map.Style(`${baseUrl}normal.day.yaml`, baseUrl);
+    let omvProvider = new H.service.omv.Provider(omvService, style);
+    let omvlayer = new H.map.layer.TileLayer(omvProvider, { max: 22 });
+
+    let map = new H.Map(
+        document.getElementById('map'),
+        omvlayer,
+        {
+            zoom: 15,
+            center: { lat: 35.681236, lng: 139.767125 },
+        }
+    );
+
+    const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+    // SVGマーカーアイコン
+    const svgMarkup =
+        '<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">' +
+        '<rect stroke="white" fill="#1b468d" x="1" y="1" width="22" height="22" />' +
+        '<text x="12" y="18" font-size="10pt" font-family="Arial" font-weight="bold" ' +
+        'text-anchor="middle" fill="white">危</text></svg>';
+    const icon = new H.map.Icon(svgMarkup);
+
+    // マーカーグループ（削除・追加を容易にするため）
+    let markerGroup = new H.map.Group();
+    map.addObject(markerGroup);
+
+    // 動的にマーカーを追加する関数
+    function addMarkers(points) {
+      // 既存のマーカーをクリア
+      markerGroup.removeAll();
+      
+      points.forEach(point => {
+        const marker = new H.map.Marker(
+          { lat: point.lat, lng: point.lng },
+          { icon: icon }
+        );
+        markerGroup.addObject(marker);
+      });
+
+      // 最初のポイントに中心を移動（オプション）
+      if (points.length > 0) {
+        map.setCenter({ lat: points[0].lat, lng: points[0].lng });
+      }
+    }
+
+    // APIから危険箇所データを取得
+    async function loadDangerPoints() {
+      try {
+        // 例: あなたのAPIエンドポイント
+        const response = await fetch('http://localhost:1880/getincident');
+        const data = await response.json();
+        
+        // data形式例: [{ lat: 35.69, lng: 139.76 }, { lat: 35.68, lng: 139.77 }]
+        addMarkers(data);
+        
+        console.log(`${data.length}件の危険箇所を読み込みました`);
+      } catch (error) {
+        console.error('データ取得エラー:', error);
+        
+        // フォールバック: モックデータで表示
+        /*
+        const mockData = [
+          { lat: 35.69, lng: 139.76 },
+          { lat: 35.685, lng: 139.755 },
+          { lat: 35.678, lng: 139.77 }
+        ];
+        addMarkers(mockData);
+        */
+      }
+    }
+
+    // 初期ロード
+    loadDangerPoints();
+
+    // 定期更新（30秒ごと）- 必要に応じてコメント解除
+    // setInterval(loadDangerPoints, 30000);
+  </script>
+</body>
+</html>
