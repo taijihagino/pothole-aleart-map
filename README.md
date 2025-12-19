@@ -1,6 +1,6 @@
 # はじめに
-今年の1月に、埼玉県八潮市で大規模な道路陥没事故が起きたことは記憶に新しいかと思います。私は現在の住まいが比較的近いこともあり、よく通る道だったため当時とても怖かった思いをしました。 </b>
-まあ、そんな状況を根本的に解決するものでは無いですが、普段クルマで、または徒歩や自転車などで通っている道に異変を感じた場合に、何かしらのアラートを送り、それをリアルタイムで地図に反映できたら少しは役に立つかなと思うわけです。 </b>
+今年の1月に、埼玉県八潮市で大規模な道路陥没事故が起きたことは記憶に新しいかと思います。私は現在の住まいが比較的近いこともあり、よく通る道だったため当時とても怖かった思いをしました。 </br>
+まあ、そんな状況を根本的に解決するものでは無いですが、普段クルマで、または徒歩や自転車などで通っている道に異変を感じた場合に、何かしらのアラートを送り、それをリアルタイムで地図に反映できたら少しは役に立つかなと思うわけです。 </br>
 既存の地図サービスなどでも、このような機能が搭載し始めていますよね。
 
 今回は、私がOSSとして関わっているNode−REDを使い、HERE APIを使ったWeb版の地図と、Datadogのログ検知を使ってユーザーに知らせるという仕組みを作ってみました。一応、Microsoft MVPらしく、クラウドインフラはAzureを使いました 笑
@@ -8,30 +8,30 @@
 同じ内容を[こちらのQiitaブログ](https://qiita.com/taiponrock/items/1f9e39b258d2fbd9e648) にも書いています。
 
 ## 参考サイト
-[MIERUNEさんのZenn - The HERE Maps Technical Book](https://zenn.dev/mierune_inc/books/here-writings/viewer/tutorial2) </b>
+[MIERUNEさんのZenn - The HERE Maps Technical Book](https://zenn.dev/mierune_inc/books/here-writings/viewer/tutorial2) </br>
 [NCMさんのQuickConvert - 地図から座標を取得する](http://asp.ncm-git.co.jp/QuickConvert/GetCoordinate.aspx)
 
 # 概要
-Node-REDを使って簡易REST APIを作成します。このAPIは、インシデント（事故など）が発生している位置情報（ジオコード）を返却します。 </b>
+Node-REDを使って簡易REST APIを作成します。このAPIは、インシデント（事故など）が発生している位置情報（ジオコード）を返却します。 </br>
 また、このREST APIがコールされると同時に、Node-REDからDatadogのログインテークのAPIを呼び出します。これには、インシデント発生の位置情報に加えて事象の説明や地図ページへのURLが含まれます。
 
 静的なWebアプリを用意します。このWebアプリでは、HERE MapのAPIを使って地図を描画します。その際に、前述のNode-REDで用意したインシデント座標取得のAPIを呼び出し、情報があればその地図上にピンを立てます。
 
-上記の処理に連動し呼び出されたDatadog APIにて、対象のDatadogのログが可視化されます。 </b>
+上記の処理に連動し呼び出されたDatadog APIにて、対象のDatadogのログが可視化されます。 </br>
 今回はログの受信までを実装していますが、必要に応じてダッシュボードへの表示やアラート（Monitor）の設定を行うと良いでしょう。
 
 ![Screenshot 2025-12-10 at 23.45.16.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/9ccfc505-8193-4519-8ff2-66a9a3ab3b13.png)
 
 # Node-RED の実装
 ## Node-RED を起動します
-ご自身で利用しているクラウド環境などへ Node-RED をインストールしてください。 </b>
+ご自身で利用しているクラウド環境などへ Node-RED をインストールしてください。 </br>
 今回、このブログ用にAzure上で Node-RED を動かしています。
 
 ## Azure へ Node-RED をインストールします
 Node-RED は Node.js ランタイムで動くWebアプリケーションですので Azure App Service のリソースを作成し、そこへ Node-RED をデプロイしていきます。
 
-App Service を作成しますが、今回はコンテナで動かすのでランタイムは Node.js ではなく Docker を選びます。 </b>
-コンテナイメージは、Docker Hub に nodered/node-red で公開されているのでこれを使います。バージョンは latest でOKです。 </b>
+App Service を作成しますが、今回はコンテナで動かすのでランタイムは Node.js ではなく Docker を選びます。 </br>
+コンテナイメージは、Docker Hub に nodered/node-red で公開されているのでこれを使います。バージョンは latest でOKです。 </br>
 プランはB1で十分かと思います。
 
 ![Screenshot 2025-12-12 at 13.26.36.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/5c8a700a-a6ca-414f-8e52-56efac2ba2b8.png)
@@ -39,15 +39,15 @@ App Service を作成しますが、今回はコンテナで動かすのでラ�
 ## フローを作成します
 次のような構成でフローを作成します。
 
-`http in` → `function` → `http response` </b>
-上記 `function` から枝分かれで → `debug` </b>
-上記 `function` から枝分かれで → `function` → `http request` → `debug` </b>
+`http in` → `function` → `http response` </br>
+上記 `function` から枝分かれで → `debug` </br>
+上記 `function` から枝分かれで → `function` → `http request` → `debug` </br>
 
-図だと以下のような形になります。 </b>
+図だと以下のような形になります。 </br>
 ![Screenshot 2025-12-10 at 14.45.04.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/fcd595bf-8cce-4483-9379-2dc9cdcc9ae3.png)
 
 ### 1つ目のFunctionノード
-インシデント情報を生成し返却するので *generateIncidentPosition* という名前にしています。 </b>
+インシデント情報を生成し返却するので *generateIncidentPosition* という名前にしています。 </br>
 ```javascript
 // 危険箇所の座標データを返す
 msg.payload = [
@@ -65,7 +65,7 @@ return msg;
 ここではテスト用のスタブとして、3つのスタティックな座標を配列で返却するようにしていますが、実際の運用の場合は、データベースを用意してそこで管理できるようにしたデータを取ってくるようにすると良いと思います。
 
 ### 2つ目のFunctionノード
-Datadogへ送信するためのインシデント情報をメッセージとして作成するので *createMessage* という名前にしています。 </b>
+Datadogへ送信するためのインシデント情報をメッセージとして作成するので *createMessage* という名前にしています。 </br>
 ```javascript
 const body_message = {
   message: "🚨 異常検知：道路に陥没がありました",
@@ -86,9 +86,9 @@ return msg;
 同じくテスト用に受け取った位置情報の配列の0番目のみをメッセージに含ませていますが、こちらも実際の運用に合わせて変更すると良いでしょう。
 
 ### HTTPリクエストノード
-メソッドはPOSTで。 </b>
-エンドポイントURLは `https://http-intake.logs.datadoghq.com/v1/input` を使います。 </b>
-Headersには `DD-API-KEY` で自分のDatadogのAPIキーを設定してください。 </b>
+メソッドはPOSTで。 </br>
+エンドポイントURLは `https://http-intake.logs.datadoghq.com/v1/input` を使います。 </br>
+Headersには `DD-API-KEY` で自分のDatadogのAPIキーを設定してください。 </br>
 ※ DatadogのAPIキーの取得方法は後ほどの手順で説明します
 
 ![Screenshot 2025-12-10 at 15.38.06.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/278a351e-9fee-458d-9c5d-82ad0e6ebc7d.png)
@@ -108,7 +108,7 @@ Create API KeyボタンをクリックするとAPIキーが生成されます。
 ![Screenshot 2025-12-10 at 11.01.36.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/94ab7d5c-233f-43dc-b546-01a79f2407ce.png)
 
 ## Webアプリを作成します。
-今回は静的な1ページのみのアプリを作成しました。 </b>
+今回は静的な1ページのみのアプリを作成しました。 </br>
 実装コードは以下の通りです。
 
 ```html
@@ -248,7 +248,7 @@ Create API KeyボタンをクリックするとAPIキーが生成されます。
 </html>
 ```
 
-上記のコードを Azure Static Web Application としてデプロイします。 </b>
+上記のコードを Azure Static Web Application としてデプロイします。 </br>
 今回はコード（といってもHTMLファイル一つだけですが）を GitHub リポジトリへ公開し、Azure の Static Web App の展開時にそのリポジトリを指定する形にしてます。
 
 ![Screenshot 2025-12-12 at 14.05.56.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/e02d1dd9-14e0-42e0-90d4-b8a610676a9e.png)
@@ -271,17 +271,17 @@ Webアプリの実装は以上です。
 New Keyで新しくAPIキーを生成し、その値を先程作成したNode-REDのHttp Requestノードの中のDD-API-KEYの値にセットしてください。
 
 # 動作確認
-作成したWebアプリが起点になりますので、対象のWebページへアクセスしてください。 </b>
+作成したWebアプリが起点になりますので、対象のWebページへアクセスしてください。 </br>
 Node-REDで作成したAPIが呼び出されて、インシデント位置情報を3箇所取得し、地図上に「危」というピンを立てているのが確認できました。
 
 ![Screenshot 2025-12-12 at 14.07.57.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/f564b1e1-d597-4324-8f3a-fd9f3cfb3d40.png)
 
-この時、Node-REDのフローが起動し、同時にDatadogへカスタムログを送信しているはずです。 </b>
+この時、Node-REDのフローが起動し、同時にDatadogへカスタムログを送信しているはずです。 </br>
 Datadogのログ画面を見てみましょう。
 
 ![Screenshot 2025-12-10 at 14.58.06.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/d590e88a-a6ae-4c12-aa26-957427da5106.png)
 
-ログが受信できていますね。ログレベルはErrorにしたので（システム障害検知では無いのでErrorというのも違和感ありますが 笑） </b>
+ログが受信できていますね。ログレベルはErrorにしたので（システム障害検知では無いのでErrorというのも違和感ありますが 笑） </br>
 詳細画面を開いてみると、設定したタグや情報が確認できます。
 
 ![Screenshot 2025-12-10 at 14.58.29a.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/4d2969a4-ee63-48c9-a07e-766a607a85d1.png)
@@ -292,7 +292,7 @@ Datadogのログ画面を見てみましょう。
 
 # おまけ - ダッシュボード表示とアラート（Monitor）
 ## ダッシュボードへウィジェットを追加します
-ログを受信できているので、ダッシュボードへのウィジェット追加は簡単です。 </b>
+ログを受信できているので、ダッシュボードへのウィジェット追加は簡単です。 </br>
 Log Explorer 画面から、クエリを確定させたら `More`プルダウンから `Save to dashboard`を選ぶだけです。
 
 Timeseries を追加
