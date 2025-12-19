@@ -55,7 +55,7 @@
   </div>
   <script>
     const platform = new H.service.Platform({
-        apikey: 'tY1_fhwT2i3ayuTCf7PCWls7PLfvpATO72TvW4seu3s',
+        apikey: '<自分のHERE APIキーをここに挿入>',
     });
 
     let omvService = platform.getOMVService({
@@ -112,7 +112,7 @@
     async function loadDangerPoints() {
       try {
         // 例: あなたのAPIエンドポイント
-        const response = await fetch('https://mynoderedapp.azurewebsites.net/getincident');
+        const response = await fetch('http://<自分のNode-REDサーバーURL>/getincident');
         const data = await response.json();
         
         // data形式例: [{ lat: 35.69, lng: 139.76 }, { lat: 35.68, lng: 139.77 }]
