@@ -253,7 +253,7 @@ Create API KeyボタンをクリックするとAPIキーが生成されます。
 
 ![Screenshot 2025-12-12 at 14.05.56.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/81226/e02d1dd9-14e0-42e0-90d4-b8a610676a9e.png)
 
-注意点は、Azure Static Web App でソースを GitHub リポジトリに指定すると、GitHubの対象リポジトリ側に自動でデプロイのための Actions - Workflow が生成されます。そのまま実行すると動的アプリのデプロイを試みて処理が失敗してしまうので、WorkflowのYamlファイルの中に `skip_app_build: true` プロパティを設定しておきましょう。
+注意点は、Azure Static Web App でソースを GitHub リポジトリに指定すると、GitHubの対象リポジトリ側に自動でデプロイのための Actions - Workflow が生成されます。そのまま実行すると動的アプリのデプロイということでビルドを試みて処理が失敗してしまうので、WorkflowのYAMLファイルの中に `skip_app_build: true` プロパティを設定しておきましょう。
 
 Webアプリの実装は以上です。
 
